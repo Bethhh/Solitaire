@@ -1,0 +1,21 @@
+import java.awt.*;
+import java.awt.event.*;
+import objectdraw.*;
+import javax.swing.*;
+import javax.swing.event.*;
+
+
+public class Clubs extends Card{
+  protected static int num = 1;
+  
+  public Clubs(Location loc, DrawingCanvas canvas,
+               WindowController w, int priority){
+    
+    super(Color.BLACK,w.getImage("clubs.jpg"),
+          w.getImage("clubs2.jpg"), loc, canvas, num, priority);
+    this.num++;
+  }
+
+
+ 
+}

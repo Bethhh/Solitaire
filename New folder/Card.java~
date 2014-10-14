@@ -1,0 +1,284 @@
+import java.awt.*;
+import java.awt.event.*;
+import objectdraw.*;
+import javax.swing.*;
+import javax.swing.event.*;
+
+public class Card implements MouseMotionListener,
+                             MouseListener{
+  //protected int num;
+  protected Color color;
+  protected int num;
+  protected int priority;
+  protected boolean hidden = true;
+  protected boolean cardGrabbed = false;
+  protected boolean top = false;
+  public Card next;
+  public Card previous;
+  public int pile;
+
+  // The image
+  protected Image img;
+  protected Location imgloc;
+  protected VisibleImage cardImg;
+  protected static int SPACE_H = 25;//space from the top
+
+  // The small image
+  protected Image img_s;
+  protected Location img_s_loc;
+  protected VisibleImage cardImg_s;
+
+ 
+  // Text
+  protected Location textloc;
+  protected static int TEXT_S = 3;//space from left
+  protected Text number;
+
+  protected DrawingCanvas canvas;
+
+  // The rec Card
+  protected Location loc;
+  protected Location orig;
+  protected static int WIDTH = 100;
+  protected static int HEIGHT = 150;
+  protected static int LINE = 15; 
+  protected FilledRect rec;
+  protected FilledRect back;
+  protected FramedRect border;
+
+  // The current location of the mouse
+  private Location point;
+  // The last location of the mouse
+  private Location lastPoint;
+  
+
+
+  public Card( Color color, Image img, Image img_s, Location loc,
+               DrawingCanvas canvas, int num, int priority ) {
+    //this.num = num;
+    this.color = color;
+    this.canvas = canvas;
+    this.num = num;
+    this.priority = priority;
+
+    this.img = img;
+    this.img_s = img_s;
+
+    this.loc = loc;
+    this.orig = loc;
+
+    this.imgloc = new Location( loc.getX(), loc.getY() + SPACE_H );
+    this.img_s_loc = new Location( loc.getX() + 15, loc.getY() + 4 );
+    this.textloc = new Location( loc.getX()+TEXT_S, loc.getY() );
+    
+    this.rec = new FilledRect(loc, WIDTH, HEIGHT, canvas);
+    rec.setColor(Color.WHITE);
+    
+    this.cardImg = new VisibleImage( this.img, imgloc, canvas);
+    this.cardImg_s = new VisibleImage( this.img_s, img_s_loc, canvas);
+    this.number = new Text(num, textloc, canvas); 
+
+    this.back = new FilledRect(loc, WIDTH, HEIGHT, canvas);
+    this.back.show();
+    this.border = new FramedRect(loc, WIDTH, HEIGHT, canvas);
+   
+    if(num == 11){
+      this.number.setText("J");
+    }else if(num == 12 ){
+      this.number.setText("Q");
+    }else if(num == 13 ){
+      this.number.setText("K");
+    }else if(num == 1 ){
+      this.number.setText("A");
+    }
+    this.back.setColor(Color.YELLOW);
+    number.setColor(color);
+    number.setBold();
+    canvas.addMouseListener( this );
+    canvas.addMouseMotionListener( this );
+    
+  }
+  public void moveTo(Location point){
+    double x = point.getX() - this.loc.getX();
+    double y = point.getY() - this.loc.getY();
+    //System.out.println("origRec("+this.rec.getX()+","+this.rec.getY()+")");
+    this.loc = point;// = new Location(x,y);
+    this.orig = point;//new Location(x,y);
+    this.imgloc = point;//new Location(x,y);
+    this.img_s_loc = point;//new Location(x,y);
+    this.textloc = point;//new Location(x,y);
+    this.rec.move(x,y);
+    this.cardImg.move(x,y);
+    this.cardImg_s.move(x,y);
+    this.number.move(x,y);
+    this.back.move(x,y);
+    this.border.move(x,y);
+    //System.out.println("Location("+loc.getX()+","+loc.getY()+")");
+    //System.out.println("Rec("+rec.getX()+","+rec.getY()+")");
+  }
+  //no orig location move
+  //move for drag
+  public void moveTo2(Location point){
+    double x = point.getX() - this.loc.getX();
+    double y = point.getY() - this.loc.getY();
+    //System.out.println("origRec("+this.rec.getX()+","+this.rec.getY()+")");
+    this.loc = new Location(point);// = new Location(x,y);
+    //this.orig = point;//new Location(x,y);
+    this.imgloc = new Location(point);//new Location(x,y);
+    this.img_s_loc = new Location(point);//new Location(x,y);
+    this.textloc = new Location(point);//new Location(x,y);
+    this.rec.move(x,y);
+    this.cardImg.move(x,y);
+    this.cardImg_s.move(x,y);
+    this.number.move(x,y);
+    this.back.move(x,y);
+    this.border.move(x,y);
+    //System.out.println("Location("+loc.getX()+","+loc.getY()+")");
+    //System.out.println("Rec("+rec.getX()+","+rec.getY()+")");
+  }
+  public int getPriority(){
+    return this.priority;
+  }
+
+  public void show(){
+    this.back.hide();
+    this.hidden = false;
+  }
+  public void hide(){
+    this.back.show();
+    this.hidden = true;
+  }
+  public boolean getHidden(){
+    return this.hidden;
+  }
+  public void sendToFront(){
+    this.rec.sendToFront();
+    this.cardImg.sendToFront();
+    this.cardImg_s.sendToFront();
+    this.number.sendToFront();
+    this.back.sendToFront();
+    this.border.sendToFront();
+  }
+  public void mouseDragged(MouseEvent e){
+    Location point = new Location(e.getX(), e.getY());
+    Location newLoc = new Location(loc);
+    newLoc.translate(point.getX() - lastPoint.getX(),
+		     point.getY() - lastPoint.getY());
+    //System.out.println("Drag"+cardGrabbed);
+    if(cardGrabbed){
+      //System.out.println("Drag");
+      if( newLoc.getX() <= canvas.getWidth()
+          && newLoc.getX() >= 0
+	  && newLoc.getY() <= canvas.getHeight()
+	  && newLoc.getY() >= 0 ){
+        //this.loc.translate(point.getX() - lastPoint.getX(),
+		           //point.getY() - lastPoint.getY());
+	//System.out.println("Draggggg");
+	this.sendToFront();
+	//System.out.println("Drdddddddaggggg");
+	//this.move(point.getX() - lastPoint.getX(),
+		  //point.getY() - lastPoint.getY());
+	this.moveTo2(newLoc);
+	Card b = this;
+	Location newLoc2 = new Location(newLoc);
+	System.out.println("b.num"+b.num + " "+ newLoc2.getY());
+	while(b.next!=null){  
+	  //System.out.println("bbbbbb");	  
+          newLoc2.translate(0,LINE);
+          b.next.moveTo2(newLoc2);
+	  //System.out.println("bbbbbb");
+  	  b.next.sendToFront();
+	  //System.out.println("bbbbbb");
+	  b = b.next;
+	  System.out.println("b.num"+b.num + " "+ newLoc2.getY());
+        }
+	lastPoint = point;
+      }
+      Solitaire.grabbed = this;
+    }
+    
+  }
+  public void mouseMoved(MouseEvent e){}
+  public void mouseEntered(MouseEvent e){}
+  public void mouseReleased(MouseEvent e){
+   /* boolean move = true;
+    if(move){
+      for( int i = 0; i < Solitaire.topArray.length; i++ ){
+        if(Solitaire.topArray[i].contains(new Location(e.getX(), e.getY()))){
+          if(Solitaire.topArray[i].canConnect(this)){
+	    System.out.println("this.pile=" + this.pile + "tA[i].pile" + Solitaire.topArray[i].pile);
+	    Card b = Solitaire.topArray[i];
+            Solitaire.move(this, Solitaire.topArray[i]);
+	    Location newLoc = new Location(b.loc.getX(), b.loc.getY()+LINE);
+	    this.moveTo(newLoc);
+	    move = false;
+	  //move this card to topArray[i]
+          }
+        }
+      }
+    }else{
+
+      this.moveTo(orig);
+    }*/
+  }
+  public void mousePressed(MouseEvent e){
+    // Gets the last location
+    lastPoint = new Location( e.getX(), e.getY() );
+    
+    // Check if the ball is grabbed
+    cardGrabbed = this.contains( lastPoint );
+    if(cardGrabbed)
+    System.out.println(this.pile);
+  }
+  public void mouseClicked(MouseEvent e){
+  }
+  public void mouseExited(MouseEvent e){
+  }
+  public boolean getGrabbed(){
+    return this.cardGrabbed;
+  }
+  public void setGrabbed(boolean b){
+    this.cardGrabbed = b;
+  }
+  public boolean contains(Location point) {
+    if(this.top && !(this.hidden)){
+      //System.out.println(this.top + "    " +this.hidden);
+      return this.rec.contains(point);
+    }else if( !(this.hidden) ){
+      //System.out.println(this.top + "    " +this.hidden+" m");
+      
+      double x = point.getX();
+      double y = point.getY();
+      System.out.println("this.loc="+this.loc.getY());
+      if( x >= this.loc.getX() && x <= this.loc.getX() + WIDTH 
+	  && y >= this.loc.getY() && y < this.loc.getY() + LINE){
+	System.out.println("this.num="+this.num);
+        return true;
+      }
+    }
+    return false;
+  }
+  public void setTop( boolean b){
+    this.top = b;
+  }
+  public boolean getTop(){
+    return this.top;
+  }
+  public Location getOrig(){
+    return this.orig;
+  }
+  public void setOrig(Location orig){
+    this.orig = orig;
+  }
+  public boolean isNext(Card b){
+    if(this.getClass() == b.getClass() && (this.num + 1) == b.num )
+      return true;
+    return false;
+  }
+  public boolean canConnect(Card b){
+    if(this.color != b.color && (this.num - 1) == b.num )
+      return true;
+    return false;
+  }
+
+}

@@ -1,0 +1,6 @@
+<html>
+    <body>
+        <applet code="Solitaire.class" archive="objectdraw.jar"
+        width="800" height="720"></applet>
+    </body>
+</html

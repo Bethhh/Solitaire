@@ -1,0 +1,164 @@
+import java.awt.*;
+import java.awt.event.*;
+import objectdraw.*;
+import javax.swing.*;
+import javax.swing.event.*;
+import java.util.*;
+
+
+
+public class Solitaire extends WindowController 
+	               implements MouseMotionListener,
+                                  MouseListener {
+  protected static int BORDER = 20;
+  protected static int LINE = 15;
+  protected static int SPACE = 10;
+  protected static int WIDTH = 100;
+  protected static int HEIGHT = 150;
+  protected RandomIntGenerator r;
+  protected PriorityQueue pq;
+  public static Card[] topArray;
+  public static Card grabbed;
+  public void begin(){
+    r = new RandomIntGenerator(1, 100);
+    pq = new PriorityQueue(52, new CardPriority());
+    Location initial = new Location(BORDER, BORDER );
+    for( int i = 1; i <= 13; i++ ){
+      pq.offer(new Clubs(initial, canvas,this, r.nextValue()));
+      pq.offer(new Hearts(initial, canvas,this, r.nextValue()));
+      pq.offer(new Diamonds(initial,canvas,this, r.nextValue()));
+      pq.offer(new Spades(initial, canvas, this, r.nextValue()));
+    }
+    Card c;
+    Card[] cArray = new Card[7];
+    topArray = new Card[7];
+
+    int x = BORDER;
+   
+    for( int k = 1; k <= 7; k++ ){
+      c = (Card)pq.poll();
+      c.pile = k;
+      cArray[k-1] = c;
+      int y = BORDER+BORDER+HEIGHT;
+      c.moveTo(new Location(x, y));
+      Card n = cArray[k-1];
+
+      //System.out.println("    " + k );
+      for( int i = 2; i <= k; i++ ){
+	y = y + LINE;
+	c = (Card)pq.poll();
+	c.pile = k;
+        c.moveTo(new Location(x, y));
+        c.sendToFront();
+        n.next = c;
+	c.previous = n;
+	n = c;
+	//y = y + LINE;
+	//System.out.println(i +" "+k);
+
+      }
+      n.show();
+      n.setTop(true);
+      topArray[k-1] = n;
+      x = x + WIDTH + SPACE;
+    }
+    /*
+    LinkedList[] pArray = new LinkedList[7];
+    for( int j = 0; j < 7; j++ ){
+      pArray[j] = new LinkedList();
+    }
+
+
+    int x = BORDER;
+   
+    for( int k = 1; k <= 7; k++ ){
+      LinkedList p = pArray[k-1];
+      int y = BORDER+BORDER+HEIGHT;
+      for( int i = 1; i <= k; i++ ){
+	c = (Card)pq.poll();
+        c.moveTo(new Location(x, y));
+        c.sendToFront();
+        p.add(p.size(), c);
+	y = y + LINE;
+
+      }
+      c = (Card)p.get(p.size()-1);
+      c.show();
+      c.setTop(true);
+      x = x + WIDTH + SPACE;
+    }
+   */
+    canvas.addMouseListener( this );
+    canvas.addMouseMotionListener( this );
+
+  
+
+  }
+  public void mouseDragged(MouseEvent e){
+  
+  }
+  public void mouseMoved(MouseEvent e){}
+  public void mouseReleased(MouseEvent e){
+    boolean move = false;
+    for( int i = 0; i < Solitaire.topArray.length; i++ ){
+//      System.out.println("tA[i].pile" +i);
+      if(grabbed != null && topArray[i] != null && 
+         i!=grabbed.pile-1 && topArray[i].contains(new Location(e.getX(), e.getY()))){
+//	System.out.println("grabbed.pile=" + grabbed.pile + "tA[i].pile" + topArray[i].pile);
+        if( topArray[i].canConnect(grabbed)){
+	  //System.out.println("cccgrabbed.pile=" + grabbed.pile + "tA[i].pile" + topArray[i].pile);
+	  Card b = topArray[i];
+          Solitaire.move(grabbed, topArray[i]);
+	  Location newLoc = new Location(b.loc.getX(), b.loc.getY()+LINE);
+          grabbed.moveTo(newLoc);
+	  while(grabbed.next!=null){
+            newLoc.translate(0, LINE);
+	    grabbed.next.moveTo(newLoc);
+	    grabbed = grabbed.next;
+	  }
+	  move = true;
+	  grabbed = null;
+	  //move this card to topArray[i]
+        }
+      }//else if(topArray[i]=null//move 13 only
+    }
+    if(!move && grabbed != null){
+      grabbed.moveTo(grabbed.getOrig());
+      while(grabbed.next!=null){
+        grabbed.next.moveTo(grabbed.next.getOrig());
+	grabbed = grabbed.next;
+      }
+    }
+  }
+  public void mousePressed(MouseEvent e){
+    
+  }
+  public void mouseClicked(MouseEvent e){}
+  public void mouseExited(MouseEvent e){}
+  public void mouseEntered(MouseEvent e){}
+  public static void move(Card a, Card b){
+    //System.out.println("a.pile=" + a.pile + "b.pile=" + b.pile);
+    topArray[a.pile-1] = a.previous;
+    if(a.previous != null ){
+      a.previous.setTop(true);
+      a.previous.show();
+      a.previous.next = null;
+    }else{//empty?
+
+    }
+    topArray[b.pile-1].next = a;//keep going
+    while(a.next!=null){
+      a.previous = topArray[b.pile-1];
+      topArray[b.pile-1] = a;
+      a = a.next;
+    }
+    a.previous = topArray[b.pile-1];
+    a.next = null;
+    b.setTop(false);
+    //a.setTop(true);
+    topArray[b.pile-1] = a;//a.next.next...
+    a.pile = b.pile;
+    
+  }
+
+}
